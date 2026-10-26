@@ -1,0 +1,52 @@
+---
+read_intern_record_from_google_sheet:
+  description: |-
+    Fetch the intern candidate data from the Google Sheet using this CSV export URL: {sheet_csv_url}
+
+    The sheet has these columns: Intern ID, Name, Email, Resume Link, Aptitude Score, Resume Score, Screening Result, Start Date, End Date, Status.
+
+    Read all rows. Identify the test record for intern with Intern ID: {test_intern_id}
+
+    Extract and return the following fields for that single record:
+    - Intern ID
+    - Name
+    - Email
+    - Resume Link (Google Drive URL)
+    - Aptitude Score (numeric, out of 100)
+
+    If the Intern ID is not found, report clearly: "Intern ID {test_intern_id} not found in the sheet." and stop.
+    Do not modify, delete, or infer any data. Return only what is explicitly present in the sheet.
+  expected_output: 'A structured record for the target intern containing: Intern ID,
+    Name, Email, Resume Link, and Aptitude Score — exactly as read from the sheet.
+    If not found, a clear not-found message.'
+  agent: intern_screening_agent
+screen_intern_and_produce_evaluation_report:
+  description: "Using the intern record from the previous task, perform a full screening
+    evaluation:\n\nSTEP 1 — FETCH RESUME\nUse the Resume Link URL from the intern
+    record to read the resume content. If the link is inaccessible, note \"Resume
+    unavailable — flagged for human review\" and proceed with resume score = 0.\n\nSTEP
+    2 — SCORE THE RESUME (40% weight)\nEvaluate the resume on these criteria (each
+    out of 10):\n- Relevant technical skills for a software/data internship\n- Relevant
+    projects or prior internship experience  \n- Educational background (degree relevance
+    and institution)\n- Resume clarity and professional formatting\n\nAverage the
+    4 criteria scores → normalize to 0–100 → this is the Resume Score.\n\nSTEP 3 —
+    APPLY RUBRIC\nFinal Score = (Resume Score × 0.40) + (Aptitude Score × 0.60)\n\nSTEP
+    4 — RECOMMENDATION\n- Final Score ≥ 70: \"SELECTED — Proceed to onboarding\"\n-
+    Final Score 50–69: \"WAITLISTED — Flagged for human review\"\n- Final Score <
+    50: \"NOT SELECTED — Flagged for human review\"\n\nSTEP 5 — OUTPUT\nProduce a
+    structured evaluation report. Never invent data. If confidence is low, add a \"FLAG
+    FOR HUMAN REVIEW\" note.\n\nThe rubric weights used: Resume 40%, Aptitude 60%.\nIntern
+    ID being evaluated: from previous task context."
+  expected_output: |-
+    A complete screening report containing:
+    - Intern ID, Name, Email
+    - Aptitude Score (from sheet)
+    - Resume Score (0–100, with per-criterion breakdown)
+    - Final Score (0–100, calculated)
+    - Recommendation: SELECTED / WAITLISTED / NOT SELECTED
+    - Explanation (3–5 sentences justifying the score)
+    - Human Review Flag: Yes/No with reason if flagged
+    - Ready-to-paste row update: all fields formatted for the Intern_Master sheet (Intern ID | Resume Score | Screening Result | Status)
+  agent: intern_screening_agent
+  context:
+  - read_intern_record_from_google_sheet
